@@ -346,6 +346,117 @@ spotter: object
 ```
 
 
+## Make a Common Data Object 
+
+I have two input strings. Which slightly differ.... using Python create a dictionary which is the same for both. 
+
+So going forward we do not need to worry about the data definition.
+
+![./img/handle_data.png](./img/handle_data.png)
+
+
+```javascript
+[
+    {
+        "id": "3607f9949782d139",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "0c8e0506c786faf4",
+        "type": "inject",
+        "z": "3607f9949782d139",
+        "name": "ClusterSpot",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "DX de TF3Y-#:    14005.0  VU2TS        CW  20dB Q:6 Z:14,15           0010Z",
+        "payloadType": "str",
+        "x": 150,
+        "y": 160,
+        "wires": [
+            [
+                "6941474bf300d039"
+            ]
+        ]
+    },
+    {
+        "id": "06f2f8026366b303",
+        "type": "debug",
+        "z": "3607f9949782d139",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 720,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "a9db2b6fd19fdbd1",
+        "type": "inject",
+        "z": "3607f9949782d139",
+        "name": "Manual Spot",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "DX de WU6X:      14051.5  AB9CA        POTA in SD                     0011Z",
+        "payloadType": "str",
+        "x": 150,
+        "y": 260,
+        "wires": [
+            [
+                "6941474bf300d039"
+            ]
+        ]
+    },
+    {
+        "id": "6941474bf300d039",
+        "type": "python-function",
+        "z": "3607f9949782d139",
+        "name": "Basic Parse",
+        "func": "#DX de TF3Y-#:    14005.0  VU2TS        CW  20dB Q:6 Z:14,15           0010Z\nfrom pprint import pprint\nincoming_data={}\ndata=msg['payload']\n\n\nincoming_data={}\n\nif (data.startswith(\"DX de\") and data.find(\"Z:\")!=-1):\n    print(\"My Cluster Aggregated\")\n    parts=data.split('#')\n    spotter = parts[0].split()[2]\n    spotter=spotter.replace('-','').replace(':','')\n    parts=parts[1].split()\n    pprint(spotter)\n    pprint(parts)\n    freq=parts[1]\n    dx=parts[2]\n    mode=parts[3]\n    print(f\"Spotter {spotter} Dx {dx} Freq {freq} mode {mode}\")\n    incoming_data['source']=data\n    incoming_data['spotter']=spotter\n    incoming_data['dx']=dx\n    incoming_data['mode']=mode\n    incoming_data['freq']=freq\n    msg['incoming_data']=incoming_data\n    pprint(incoming_data)\nelif (data.startswith(\"DX de\") and data.find(\"Z:\")==-1):\n    print(\"Non Agg\")\n    parts=data.split()\n    #spotter = parts[0].split()[2]\n    #spotter=spotter.replace('-','').replace(':','')\n    spotter=parts[2].replace('-','').replace(':','')\n    dx=parts[4]\n    freq=parts[3]\n    mode=\"\"\n    incoming_data['source']=data\n    incoming_data['spotter']=spotter\n    incoming_data['dx']=dx\n    incoming_data['mode']=mode\n    incoming_data['freq']=freq\n    pprint(incoming_data)\n    msg['incoming_data']=incoming_data\n\nreturn msg",
+        "outputs": 1,
+        "x": 390,
+        "y": 200,
+        "wires": [
+            [
+                "06f2f8026366b303"
+            ]
+        ]
+    }
+]
+```
 
 
 

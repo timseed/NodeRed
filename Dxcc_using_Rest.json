@@ -1,0 +1,831 @@
+[
+    {
+        "id": "348efe1c.e64a8a",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "ae6fd64f.6a41a8",
+        "type": "delay",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "outputs": 1,
+        "x": 440,
+        "y": 120,
+        "wires": [
+            [
+                "480e2f2e.3f208"
+            ]
+        ]
+    },
+    {
+        "id": "480e2f2e.3f208",
+        "type": "tcp request",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "server": "cluster",
+        "port": "7300",
+        "out": "sit",
+        "splitc": " ",
+        "x": 580,
+        "y": 40,
+        "wires": [
+            [
+                "af938576.9b34e8"
+            ]
+        ]
+    },
+    {
+        "id": "1f46d5d2.088ad2",
+        "type": "debug",
+        "z": "348efe1c.e64a8a",
+        "name": "All Data",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 460,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "af938576.9b34e8",
+        "type": "function",
+        "z": "348efe1c.e64a8a",
+        "name": "ToString",
+        "func": "msg.payload=msg.payload.toString();\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 40,
+        "wires": [
+            [
+                "cc01a789.4a659"
+            ]
+        ]
+    },
+    {
+        "id": "2758f4f8.9a430c",
+        "type": "inject",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 250,
+        "y": 40,
+        "wires": [
+            [
+                "480e2f2e.3f208",
+                "d1fbaf12.9eee68"
+            ]
+        ]
+    },
+    {
+        "id": "d1fbaf12.9eee68",
+        "type": "function",
+        "z": "348efe1c.e64a8a",
+        "name": "CallSign",
+        "func": "msg.payload=\"DU3TW\\r\\n\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 300,
+        "y": 180,
+        "wires": [
+            [
+                "ae6fd64f.6a41a8"
+            ]
+        ]
+    },
+    {
+        "id": "273cc0c8.be7578",
+        "type": "python-function",
+        "z": "348efe1c.e64a8a",
+        "name": "Python-ExtractDetails",
+        "func": "from ham.dxcc import DxccAll\nfrom ham.calc import Locator\nfrom ham.band import HamBand\n#from ham.band import FrequencyMode\n\nd=DxccAll()\nloc = Locator()\nhb=HamBand()\nmyLoc=loc.latlong_to_locator(15.19, 120.78)\n#freq_mode = FrequencyMode()\n\ndata={}\npayload=msg['payload']\nif (payload.startswith('DX de') and payload.find(\"Z:\")!=-1):\n    part1=payload.split('#')\n    spotter=part1[0].split()[2]\n    spotter=spotter.replace('#','').replace(':','').replace('\\-','').replace('-','')\n    part2=part1[1][1:].split()\n    dx=part2[1]\n    dx_info= d.find(dx)\n    spotter_info=d.find(spotter)\n    freq=part2[0]\n    \n    dx_loc=loc.latlong_to_locator(dx_info.Latitude,-1*dx_info.Longitude)\n    spotter_loc=loc.latlong_to_locator(spotter_info.Latitude,-1*spotter_info.Longitude)\n    \n    data['dx']=dx\n    data['freq']=freq\n    data['spotter']=spotter\n    data['mode']=part2[2]\n    data['strength']=part2[3][:-2]\n    data['quality']=part2[4][2:]\n    data['zones']=part2[5][2:].split(',')\n    data['Country']=dx_info.Country_Name\n    data['ITUZone']=dx_info.ITU_Zone\n    data['CQZone']=dx_info.CQ_Zone\n    data['Continent']=dx_info.Continent_Abbreviation\n    data['MyGrid']=\"PK05JE\"\n    data['DxLat']=dx_info.Latitude\n    data['DxLon']=-1*dx_info.Longitude\n    data['Band']=hb.khz_to_m(float(freq))\n    data['DxGrid']=dx_loc\n    data['distance_km']=loc.calculate_distance_km(data['MyGrid'],dx_loc)\n    data['orig']=payload\n    data['spot_type']='DXSpider_RBN'\n    data['spotter_Continent']=spotter_info.Continent_Abbreviation\n    data['spotter_Country']=spotter_info.Country_Name\n    data['spotter_ITUZone']=spotter_info.ITU_Zone\n    data['spotter_CQZone']=spotter_info.CQ_Zone\n    data['spotter_to_dx_distance_km']=loc.calculate_distance_km(spotter_loc,dx_loc)\n \n    data['payload']=payload\n    msg['payload']=data\nreturn msg",
+        "outputs": 1,
+        "x": 1120,
+        "y": 60,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "cc01a789.4a659",
+        "type": "switch",
+        "z": "348efe1c.e64a8a",
+        "name": "Filter Input String",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "cont",
+                "v": "DX de",
+                "vt": "str"
+            },
+            {
+                "t": "regex",
+                "v": "^WWV",
+                "vt": "str",
+                "case": false
+            },
+            {
+                "t": "cont",
+                "v": "Invalid command",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 4,
+        "x": 310,
+        "y": 280,
+        "wires": [
+            [
+                "1a19a962d8edf9ea"
+            ],
+            [
+                "5b113def.eb453c"
+            ],
+            [
+                "82e3d5c2.5d7c7"
+            ],
+            [
+                "3605689d.70117"
+            ]
+        ]
+    },
+    {
+        "id": "82e3d5c2.5d7c7",
+        "type": "debug",
+        "z": "348efe1c.e64a8a",
+        "name": "Invalid Command",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 530,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "3605689d.70117",
+        "type": "debug",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 470,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "5b113def.eb453c",
+        "type": "debug",
+        "z": "348efe1c.e64a8a",
+        "name": "WWV",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 510,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "b4d382f7.91138",
+        "type": "switch",
+        "z": "348efe1c.e64a8a",
+        "name": "CW",
+        "property": "payload.mode",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "cont",
+                "v": "CW",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1250,
+        "y": 140,
+        "wires": [
+            [
+                "6664e848.16233"
+            ]
+        ]
+    },
+    {
+        "id": "8b316928.04e5a",
+        "type": "switch",
+        "z": "348efe1c.e64a8a",
+        "name": "SSB",
+        "property": "payload.mode",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "SSB",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1250,
+        "y": 220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e8276a21.60abb8",
+        "type": "debug",
+        "z": "348efe1c.e64a8a",
+        "name": "Filtered",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 2240,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "6664e848.16233",
+        "type": "switch",
+        "z": "348efe1c.e64a8a",
+        "name": "CW Band Split",
+        "property": "payload.Band",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "160",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "80",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "40",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "20",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "15",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "10",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 7,
+        "x": 1520,
+        "y": 120,
+        "wires": [
+            [
+                "bb144a9d.f1d5"
+            ],
+            [
+                "bb144a9d.f1d5"
+            ],
+            [
+                "2e66bf76.ce85d8",
+                "b3b75a6.26d1228"
+            ],
+            [
+                "2e66bf76.ce85d8",
+                "b3b75a6.26d1228"
+            ],
+            [
+                "2e66bf76.ce85d8",
+                "b3b75a6.26d1228"
+            ],
+            [
+                "2e66bf76.ce85d8",
+                "b3b75a6.26d1228"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "2e66bf76.ce85d8",
+        "type": "switch",
+        "z": "348efe1c.e64a8a",
+        "name": "OC AS Spots",
+        "property": "payload.Continent",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "regex",
+                "v": "(OC|AS)",
+                "vt": "str",
+                "case": false
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1790,
+        "y": 100,
+        "wires": [
+            [
+                "e8276a21.60abb8",
+                "1e68e042.c819d8"
+            ],
+            []
+        ],
+        "outputLabels": [
+            "Matches",
+            ""
+        ]
+    },
+    {
+        "id": "b3b75a6.26d1228",
+        "type": "switch",
+        "z": "348efe1c.e64a8a",
+        "name": "Distance_20_15_10m",
+        "property": "payload.distance_km",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lt",
+                "v": "10000",
+                "vt": "num"
+            },
+            {
+                "t": "btwn",
+                "v": "10001",
+                "vt": "num",
+                "v2": "14000",
+                "v2t": "num"
+            },
+            {
+                "t": "eq",
+                "v": "",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 3,
+        "x": 1800,
+        "y": 180,
+        "wires": [
+            [
+                "f702afac.5827e"
+            ],
+            [
+                "f702afac.5827e"
+            ],
+            []
+        ],
+        "outputLabels": [
+            "10K",
+            "14K",
+            ""
+        ]
+    },
+    {
+        "id": "f702afac.5827e",
+        "type": "switch",
+        "z": "348efe1c.e64a8a",
+        "name": "Spotter_to_Dx",
+        "property": "payload.spotter_to_dx_distance_km",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "3000",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 2020,
+        "y": 180,
+        "wires": [
+            [
+                "ba18ea9c.ea476",
+                "1e68e042.c819d8"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "ba18ea9c.ea476",
+        "type": "debug",
+        "z": "348efe1c.e64a8a",
+        "name": "Distance",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 2240,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "bb144a9d.f1d5",
+        "type": "switch",
+        "z": "348efe1c.e64a8a",
+        "name": "Distance Low Band",
+        "property": "payload.distance_km",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "lt",
+                "v": "5000",
+                "vt": "num"
+            },
+            {
+                "t": "eq",
+                "v": "",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1790,
+        "y": 40,
+        "wires": [
+            [
+                "2a278df5.363f52",
+                "1e68e042.c819d8"
+            ],
+            []
+        ],
+        "outputLabels": [
+            "10K",
+            ""
+        ]
+    },
+    {
+        "id": "2a278df5.363f52",
+        "type": "debug",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 2250,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "b8beeeaf.a4b11",
+        "type": "tcp in",
+        "z": "348efe1c.e64a8a",
+        "name": "Server holding connections at :7800",
+        "server": "server",
+        "host": "",
+        "port": "7800",
+        "datamode": "stream",
+        "datatype": "utf8",
+        "newline": "\\n",
+        "topic": "text",
+        "base64": false,
+        "x": 1760,
+        "y": 420,
+        "wires": [
+            [
+                "1e68e042.c819d8"
+            ]
+        ]
+    },
+    {
+        "id": "86cb9815.83e7f8",
+        "type": "tcp out",
+        "z": "348efe1c.e64a8a",
+        "name": "reply: all open connections will be messaged",
+        "host": "",
+        "port": "",
+        "beserver": "reply",
+        "base64": false,
+        "end": false,
+        "x": 2310,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "1e68e042.c819d8",
+        "type": "template",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "{{payload.orig}}\n",
+        "output": "str",
+        "x": 2020,
+        "y": 420,
+        "wires": [
+            [
+                "86cb9815.83e7f8"
+            ]
+        ]
+    },
+    {
+        "id": "1a19a962d8edf9ea",
+        "type": "python-function",
+        "z": "348efe1c.e64a8a",
+        "name": "Basic Parts",
+        "func": "#DX de TF3Y-#:    14005.0  VU2TS        CW  20dB Q:6 Z:14,15           0010Z\nfrom pprint import pprint\nincoming_data={}\ndata=msg['payload']\n\n\nincoming_data={}\n\nif (data.startswith(\"DX de\") and data.find(\"Z:\")!=-1):\n    print(\"My Cluster Aggregated\")\n    parts=data.split('#')\n    spotter = parts[0].split()[2]\n    spotter=spotter.replace('-','').replace(':','').replace('/B','')\n    parts=parts[1].split()\n    pprint(spotter)\n    pprint(parts)\n    freq=parts[1]\n    dx=parts[2]\n    mode=parts[3]\n    print(f\"Spotter {spotter} Dx {dx} Freq {freq} mode {mode}\")\n    incoming_data['source']=data\n    incoming_data['spotter']=spotter\n    incoming_data['dx']=dx\n    incoming_data['mode']=mode\n    incoming_data['freq']=freq\n    msg['incoming_data']=incoming_data\n    pprint(incoming_data)\nelif (data.startswith(\"DX de\") and data.find(\"Z:\")==-1):\n    print(\"Non Agg\")\n    parts=data.split()\n    #spotter = parts[0].split()[2]\n    #spotter=spotter.replace('-','').replace(':','')\n    spotter=parts[2].replace('-','').replace(':','').replace('/B','')\n    dx=parts[4]\n    freq=parts[3]\n    mode=\"\"\n    incoming_data['source']=data\n    incoming_data['spotter']=spotter\n    incoming_data['dx']=dx\n    incoming_data['mode']=mode\n    incoming_data['freq']=freq\n    pprint(incoming_data)\n    msg['incoming_data']=incoming_data\n\nreturn msg",
+        "outputs": 1,
+        "x": 650,
+        "y": 180,
+        "wires": [
+            [
+                "2b5c97f3174d6ddc"
+            ]
+        ]
+    },
+    {
+        "id": "c8130bc8702d6b6e",
+        "type": "http request",
+        "z": "348efe1c.e64a8a",
+        "name": "Call Python/Flask Service",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": false,
+        "url": "",
+        "tls": "",
+        "proxy": "",
+        "authType": "",
+        "x": 1090,
+        "y": 300,
+        "wires": [
+            [
+                "1481887438ad2ac8"
+            ]
+        ]
+    },
+    {
+        "id": "849e5db4f8b2e9dc",
+        "type": "function",
+        "z": "348efe1c.e64a8a",
+        "name": "REST DX Call",
+        "func": "msg.payload=\"http://localhost:5000/call/\"+msg.incoming_data.dx\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 300,
+        "wires": [
+            [
+                "38a0c4d9b323a133"
+            ]
+        ]
+    },
+    {
+        "id": "38a0c4d9b323a133",
+        "type": "change",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "url",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 890,
+        "y": 300,
+        "wires": [
+            [
+                "c8130bc8702d6b6e"
+            ]
+        ]
+    },
+    {
+        "id": "1481887438ad2ac8",
+        "type": "python-function",
+        "z": "348efe1c.e64a8a",
+        "name": "Set DX",
+        "func": "from pprint import pprint\nurl_data={}\npprint(msg['payload'])\nurl_data=msg['payload']\nmsg['dx']=url_data\nmsg['payload']={}\nreturn msg",
+        "outputs": 1,
+        "x": 1330,
+        "y": 300,
+        "wires": [
+            [
+                "fdf0ac6b8cdb7e64"
+            ]
+        ]
+    },
+    {
+        "id": "9f137a1e4172db25",
+        "type": "function",
+        "z": "348efe1c.e64a8a",
+        "name": "REST Spotter Call",
+        "func": "msg.payload = \"http://localhost:5000/call/\"+msg.incoming_data.spotter\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 360,
+        "wires": [
+            [
+                "86f75e7f54c887b5"
+            ]
+        ]
+    },
+    {
+        "id": "86f75e7f54c887b5",
+        "type": "change",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "url",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 890,
+        "y": 360,
+        "wires": [
+            [
+                "40235b35ec72391a"
+            ]
+        ]
+    },
+    {
+        "id": "40235b35ec72391a",
+        "type": "http request",
+        "z": "348efe1c.e64a8a",
+        "name": "Call Python/Flask Service",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": false,
+        "url": "",
+        "tls": "",
+        "proxy": "",
+        "authType": "",
+        "x": 1090,
+        "y": 360,
+        "wires": [
+            [
+                "9246c1b331829cc3"
+            ]
+        ]
+    },
+    {
+        "id": "9246c1b331829cc3",
+        "type": "python-function",
+        "z": "348efe1c.e64a8a",
+        "name": "Set Spotter",
+        "func": "from pprint import pprint\nurl_data={}\npprint(msg['payload'])\nurl_data=msg['payload']\nmsg['spotter']=url_data\nmsg['payload']={}\nmsg['complete']=True\nreturn msg",
+        "outputs": 1,
+        "x": 1350,
+        "y": 360,
+        "wires": [
+            [
+                "fdf0ac6b8cdb7e64"
+            ]
+        ]
+    },
+    {
+        "id": "fdf0ac6b8cdb7e64",
+        "type": "join",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "mode": "custom",
+        "build": "object",
+        "property": "",
+        "propertyType": "full",
+        "key": "_msgid",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 1510,
+        "y": 320,
+        "wires": [
+            [
+                "5773f9e637694c70"
+            ]
+        ]
+    },
+    {
+        "id": "5773f9e637694c70",
+        "type": "debug",
+        "z": "348efe1c.e64a8a",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1490,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "2b5c97f3174d6ddc",
+        "type": "python-function",
+        "z": "348efe1c.e64a8a",
+        "name": "Calc Band",
+        "func": "from ham.band import HamBand\nhb=HamBand()\nband={}\nband['M']=hb.khz_to_m(float(msg['incoming_data']['freq']))\nband['F']=float(msg['incoming_data']['freq'])\nmsg['band']=band\nreturn msg",
+        "outputs": 1,
+        "x": 850,
+        "y": 180,
+        "wires": [
+            [
+                "849e5db4f8b2e9dc",
+                "9f137a1e4172db25"
+            ]
+        ]
+    }
+]

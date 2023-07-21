@@ -459,5 +459,12 @@ So going forward we do not need to worry about the data definition.
 ```
 
 
+## Data Adding 
+I chose to add data in seperate Python Modules.
+It is a little easier to debug - and place the data in it's own dictionary i.e.
 
- 
+  - dx 
+  - spotter
+  - band
+  
+ Etc.
